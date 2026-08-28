@@ -7,6 +7,7 @@ import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
+import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.plugin.Plugin;
@@ -22,50 +23,13 @@ public class Listener implements org.bukkit.event.Listener {
     List<Location> blockLookingAt = new ArrayList<Location>();
 
     World theWorld;
-
-    Vector3D anchor = new Vector3D(0, 100, 0);
-
-    Vector3D[] verticies = new Vector3D[]{ new Vector3D(0, 0, 0), new Vector3D(10, 0, 0), new Vector3D(0, 0, 10),
-            new Vector3D(10, 0, 10), new Vector3D(0, 10, 0), new Vector3D(10, 10, 0), new Vector3D(0, 10, 10), new Vector3D(10, 10, 10) };
-    int[][] connections = new int[][]{
-            { 1, 2, 4, 7 }, { 5, 3, 6 } , { 6, 3 }, { 7 }, {5, 6}, {7}, {7}
-    };
-
-    public class Vector3D {
-        double x;
-        double y;
-        double z;
-        public Vector3D(double x, double y, double z){
-            this.x = x;
-            this.y = y;
-            this.z = z;
-        }
-    }
+    Model model;
 
     @EventHandler
-    public void onPlayerMove(PlayerMoveEvent event){
+    public void onPlayerMove(BlockPlaceEvent event){
         Location loc = event.getPlayer().getLocation();
-        anchor = new Vector3D(loc.getX(), loc.getY() + 4, loc.getZ());
+        model.position = new Vector3D(loc.getX(), loc.getY() + 4, loc.getZ());
     }
-
-    public class Matrix3D {
-        double xx, yx, zx, xy, yy, zy, xz, yz, zz;
-        public Matrix3D(double xx, double yx, double zx,
-                        double xy, double yy, double zy,
-                        double xz, double yz, double zz
-        ){
-            this.xx = xx;
-            this.xy = xy;
-            this.xz = xz;
-            this.yx = yx;
-            this.yy = yy;
-            this.yz = yz;
-            this.zx = zx;
-            this.zy = zy;
-            this.zz = zz;
-        }
-    }
-
 
     Location zero;
 
@@ -80,7 +44,12 @@ public class Listener implements org.bukkit.event.Listener {
         if(playerLocations.contains(playerID)){
            return;
         }
+        Vector3D[] vertices = new Vector3D[]{ new Vector3D(0, 0, 0), new Vector3D(10, 0, 0), new Vector3D(0, 0, 10),
+                new Vector3D(10, 0, 10), new Vector3D(0, 10, 0), new Vector3D(10, 10, 0), new Vector3D(0, 10, 10), new Vector3D(10, 10, 10) };
+        int[][] edges = new int[][]{
+                { 1, 2, 4, 7 }, { 5, 3, 6 } , { 6, 3 }, { 7 }, {5, 6}, {7}, {7}};
 
+        model = new Model(new Vector3D(0, 100, 0), new Vector3D(-5, 0, -5), vertices, edges);
 
         playerLocations.add(player.getLocation());
         blockLookingAt.add(player.getTargetBlock(null, 100).getLocation());
@@ -91,6 +60,10 @@ public class Listener implements org.bukkit.event.Listener {
     @EventHandler
     public void onBreakBlockEvent(BlockBreakBlockEvent event){
         zero = event.getBlock().getLocation();
+    }
+
+    public Vector3D subPoint(Vector3D vector3D1, Vector3D vector3D2){
+        return new Vector3D(vector3D1.x - vector3D2.x, vector3D1.y - vector3D2.y, vector3D1.z - vector3D2.z);
     }
 
     private Vector3D sumPoint(Vector3D vector3D1, Vector3D vector3D2){
@@ -127,18 +100,18 @@ public class Listener implements org.bukkit.event.Listener {
                                             0, 1, 0,
                                                 -sin, 0, cos);
 
-                for(int i = 0; i < connections.length; i++){
-                    for(int j = 0; j < connections[i].length; j++){
+                for(int i = 0; i < model.edges.length; i++){
+                    for(int j = 0; j < model.edges[i].length; j++){
 
                         //Set the model anchor to the centre
-                        Vector3D current1 = sumPoint(verticies[i], new Vector3D(-5, 0, -5));
-                        Vector3D current2 = sumPoint(verticies[connections[i][j]], new Vector3D(-5, 0, -5));
+                        Vector3D current1 = sumPoint(model.vertices[i], model.anchor);
+                        Vector3D current2 = sumPoint(model.vertices[model.edges[i][j]], model.anchor);
                         //apply the rotational matrix to the model
                         current1 = vectorMatrixAddition(current1, rotMat);
                         current2 = vectorMatrixAddition(current2, rotMat);
                         //Transform the model to the proper location
-                        current1 = sumPoint(current1, anchor);
-                        current2 = sumPoint(current2, anchor);
+                        current1 = sumPoint(current1, model.position);
+                        current2 = sumPoint(current2, model.position);
 
 
                         DrawLine(theWorld, PointToLocation(theWorld, current1), PointToLocation(theWorld, current2), 10);
@@ -167,7 +140,8 @@ public class Listener implements org.bukkit.event.Listener {
         double differenceZ = (location1.getZ() - location2.getZ()) / (steps-1);
 
         for(int i = 0; i < steps; i++){
-            world.spawnParticle(Particle.DUST, new Location(world, location1.getX() - (differenceX*i), location1.getY() - (differenceY * i), location1.getZ() - (differenceZ * i)), 5, 0, 0, 0, new Particle.DustOptions(colour, size));
+            Location loc = new Location(world, location1.getX() - (differenceX*i), location1.getY() - (differenceY * i), location1.getZ() - (differenceZ * i));
+            world.spawnParticle(Particle.DUST, loc, 5, 0, 0, 0, new Particle.DustOptions(colour, size));
         }
     }
 }
