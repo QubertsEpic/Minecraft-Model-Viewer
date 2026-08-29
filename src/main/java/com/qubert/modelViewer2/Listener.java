@@ -13,9 +13,9 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.UUID;
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.util.*;
 
 public class Listener implements org.bukkit.event.Listener {
 
@@ -26,9 +26,10 @@ public class Listener implements org.bukkit.event.Listener {
     Model model;
 
     @EventHandler
-    public void onPlayerMove(BlockPlaceEvent event){
+    public void onPlayerMove(PlayerMoveEvent event){
         Location loc = event.getPlayer().getLocation();
         model.position = new Vector3D(loc.getX(), loc.getY() + 4, loc.getZ());
+
     }
 
     Location zero;
@@ -44,12 +45,12 @@ public class Listener implements org.bukkit.event.Listener {
         if(playerLocations.contains(playerID)){
            return;
         }
-        Vector3D[] vertices = new Vector3D[]{ new Vector3D(0, 0, 0), new Vector3D(10, 0, 0), new Vector3D(0, 0, 10),
+        /*Vector3D[] vertices = new Vector3D[]{ new Vector3D(0, 0, 0), new Vector3D(10, 0, 0), new Vector3D(0, 0, 10),
                 new Vector3D(10, 0, 10), new Vector3D(0, 10, 0), new Vector3D(10, 10, 0), new Vector3D(0, 10, 10), new Vector3D(10, 10, 10) };
         int[][] edges = new int[][]{
                 { 1, 2, 4, 7 }, { 5, 3, 6 } , { 6, 3 }, { 7 }, {5, 6}, {7}, {7}};
 
-        model = new Model(new Vector3D(0, 100, 0), new Vector3D(-5, 0, -5), vertices, edges);
+        model = new Model(new Vector3D(0, 100, 0), new Vector3D(-5, 0, -5), vertices, edges);*/
 
         playerLocations.add(player.getLocation());
         blockLookingAt.add(player.getTargetBlock(null, 100).getLocation());
@@ -84,9 +85,10 @@ public class Listener implements org.bukkit.event.Listener {
                                 vec1.x * mat1.xz + vec1.y * mat1.yz + vec1.z * mat1.zz);
     }
 
-    public Listener(Plugin plugin){
+    public Listener(Plugin plugin) throws FileNotFoundException {
         zero = new Location(plugin.getServer().getWorlds().get(0), 0, 100, 0);
         theWorld = plugin.getServer().getWorlds().get(0);
+        model = ObjReader("Cube.obj", new Vector3D(0, 100, 0), new Vector3D(0, 0, 0));
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -106,6 +108,10 @@ public class Listener implements org.bukkit.event.Listener {
                         //Set the model anchor to the centre
                         Vector3D current1 = sumPoint(model.vertices[i], model.anchor);
                         Vector3D current2 = sumPoint(model.vertices[model.edges[i][j]], model.anchor);
+
+                        Vector3D scale = new Vector3D(20, 20 ,20);
+                        current1 = dotPoint(current1, new Vector3D(15, 15, 15));
+                        current2 = dotPoint(current2, new Vector3D(15, 15, 15));
                         //apply the rotational matrix to the model
                         current1 = vectorMatrixAddition(current1, rotMat);
                         current2 = vectorMatrixAddition(current2, rotMat);
@@ -114,7 +120,7 @@ public class Listener implements org.bukkit.event.Listener {
                         current2 = sumPoint(current2, model.position);
 
 
-                        DrawLine(theWorld, PointToLocation(theWorld, current1), PointToLocation(theWorld, current2), 10);
+                        DrawLine(theWorld, PointToLocation(theWorld, current1), PointToLocation(theWorld, current2), 20);
                     }
                 }
             }
@@ -141,7 +147,106 @@ public class Listener implements org.bukkit.event.Listener {
 
         for(int i = 0; i < steps; i++){
             Location loc = new Location(world, location1.getX() - (differenceX*i), location1.getY() - (differenceY * i), location1.getZ() - (differenceZ * i));
-            world.spawnParticle(Particle.DUST, loc, 5, 0, 0, 0, new Particle.DustOptions(colour, size));
+            world.spawnParticle(Particle.DUST, loc, 1, 0, 0, 0, new Particle.DustOptions(colour, size));
         }
+    }
+
+    private Model ObjReader(String fileName, Vector3D pos, Vector3D anc) throws FileNotFoundException {
+        File objFile = new File(fileName);
+        if (!objFile.exists()) {
+            throw new FileNotFoundException("Cannot open obj file that does not exist.");
+        }
+        Scanner myReader = new Scanner(objFile);
+
+        ArrayList<Vector3D> vertices = new ArrayList<>();
+        HashMap<Integer,ArrayList<Integer>> connections = new HashMap<Integer, ArrayList<Integer>>();
+
+        while (myReader.hasNextLine()) {
+            String data = myReader.nextLine();
+            char[] dataChars = data.toCharArray();
+            if (dataChars.length < 1) {
+                continue;
+            }
+
+            char initialCharacter = dataChars[0];
+            int start;
+            switch (initialCharacter) {
+                case 'v':
+                    if (dataChars[1] != ' ') {
+                        break;
+                    }
+
+                    start = 1;
+                    double[] vector = new double[3];
+
+                    for (int i = 0; i < 3; i++) {
+                        int location = data.indexOf(' ', start);
+                        int next = data.indexOf(' ', location+1);
+                        if (next == -1) {
+                            next = data.length();
+                        }
+
+                        vector[i] = Double.parseDouble(data.substring(location + 1, next));
+                        start = location + 1;
+
+                    }
+
+                    vertices.add(new Vector3D(vector[0], vector[1], vector[2]));
+
+                    break;
+                case 'f':
+                    if (dataChars[1] != ' ') {
+                        break;
+                    }
+                    ArrayList<Integer> numbers = new ArrayList<>();
+                    start = 1;
+                    int next = data.indexOf(' ', start+1);
+
+                    while(next != start){
+                        String faceData = data.substring(start+1, next);
+
+                        int slashIndex = faceData.indexOf('/');
+                        if(slashIndex != -1){
+                            faceData = faceData.substring(0, slashIndex);
+                        }
+                        numbers.add(Integer.parseInt(faceData)-1);
+
+                        start = next;
+                        next = data.indexOf(' ', start+1);
+                        if(next == -1){
+                            next = data.length();
+                        }
+                    }
+
+                    if(numbers.size() > 2){
+                        for(int i = 0; i < numbers.size()-1; i++){
+                            ArrayList<Integer> list = new ArrayList<>();
+                            if(connections.containsKey(numbers.get(i)))
+                            {
+                                list = connections.get(numbers.get(i));
+                            }
+                            list.add(numbers.get(i+1));
+                            connections.put(numbers.get(i), list);
+                        }
+                    }
+
+                    break;
+            }
+
+        }
+        int[][] connectionArray = new int[vertices.size()][];
+        for(int i = 0; i < connectionArray.length; i++){
+            if(!connections.containsKey(i)) {
+                connectionArray[i] = new int[0];
+                continue;
+            }
+
+            ArrayList<Integer> values =  connections.get(i);
+            connectionArray[i] = new int[values.size()];
+            for(int j = 0; j < values.size(); j++){
+                connectionArray[i][j] = values.get(j);
+            }
+        }
+        return new Model(pos, anc, vertices.toArray(new Vector3D[0]), connectionArray);
     }
 }

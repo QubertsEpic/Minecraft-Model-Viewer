@@ -1,0 +1,8 @@
+/target/
+/target/original-ModelViewer2-1.0-SNAPSHOT.jar
+/target/ModelViewer2-1.0-SNAPSHOT-shaded.jar
+/target/maven-archiver/
+/target/classes/
+/target/maven-status/
+/target/generated-sources/
+/target/ModelViewer2-1.0-SNAPSHOT.jar
