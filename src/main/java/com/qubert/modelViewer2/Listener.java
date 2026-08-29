@@ -244,6 +244,12 @@ public class Listener implements org.bukkit.event.Listener {
             ArrayList<Integer> values =  connections.get(i);
             connectionArray[i] = new int[values.size()];
             for(int j = 0; j < values.size(); j++){
+                if(connections.containsKey(values.get(j))){
+                    ArrayList<Integer> oppositeValues = connections.get(values.get(j));
+                    if(oppositeValues.contains(i)){
+                        continue;
+                    }
+                }
                 connectionArray[i][j] = values.get(j);
             }
         }
