@@ -1,6 +1,0 @@
-name: ModelViewer2
-version: '1.0-SNAPSHOT'
-
-main: com.qubert.modelViewer2.ModelViewer2
-api-version: '1.21.10'
-load: POSTWORLD
