@@ -1,5 +1,6 @@
 package com.qubert.modelViewer2;
 
+import com.qubert.modelViewer2.Data.Vector3D;
 import org.bukkit.World;
 
 import java.awt.*;

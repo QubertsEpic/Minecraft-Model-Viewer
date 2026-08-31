@@ -1,5 +1,8 @@
 package com.qubert.modelViewer2;
 
+import com.qubert.modelViewer2.Data.Matrix3D;
+import com.qubert.modelViewer2.Data.Matrix4D;
+import com.qubert.modelViewer2.Data.Vector3D;
 import io.papermc.paper.event.block.BlockBreakBlockEvent;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -12,6 +15,8 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
+import org.joml.Matrix3d;
+import org.joml.Vector3d;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -45,12 +50,8 @@ public class Listener implements org.bukkit.event.Listener {
         if(playerLocations.contains(playerID)){
            return;
         }
-        /*Vector3D[] vertices = new Vector3D[]{ new Vector3D(0, 0, 0), new Vector3D(10, 0, 0), new Vector3D(0, 0, 10),
-                new Vector3D(10, 0, 10), new Vector3D(0, 10, 0), new Vector3D(10, 10, 0), new Vector3D(0, 10, 10), new Vector3D(10, 10, 10) };
-        int[][] edges = new int[][]{
-                { 1, 2, 4, 7 }, { 5, 3, 6 } , { 6, 3 }, { 7 }, {5, 6}, {7}, {7}};
 
-        model = new Model(new Vector3D(0, 100, 0), new Vector3D(-5, 0, -5), vertices, edges);*/
+
 
         playerLocations.add(player.getLocation());
         blockLookingAt.add(player.getTargetBlock(null, 100).getLocation());
@@ -102,12 +103,29 @@ public class Listener implements org.bukkit.event.Listener {
                                             0, 1, 0,
                                                 -sin, 0, cos);
 
+                double scaleFactor = 1;
+                Matrix3D scaleMatrix = new Matrix3D(scaleFactor, scaleFactor ,scaleFactor,
+                                                    scaleFactor, scaleFactor, scaleFactor,
+                                                    scaleFactor, scaleFactor, scaleFactor);
+
+                Matrix3D scaleRotMatrix = MatrixMultiplication(rotMat, scaleMatrix);
+
+                Vector3D translationMatrix = new Vector3D(0,0,0);
+                translationMatrix = sumPoint(translationMatrix, model.anchor);
+                translationMatrix = sumPoint(translationMatrix, model.position);
+
+                Matrix4D informationMatrix = new Matrix4D(scaleRotMatrix, translationMatrix);
+
+
+
                 for(int i = 0; i < model.edges.length; i++){
                     for(int j = 0; j < model.edges[i].length; j++){
-
                         //Set the model anchor to the centre
                         Vector3D current1 = sumPoint(model.vertices[i], model.anchor);
                         Vector3D current2 = sumPoint(model.vertices[model.edges[i][j]], model.anchor);
+
+                        Vector3D current11 = homogenousCollapser(model.vertices[i], informationMatrix);
+                        Vector3D current22 = homogenousCollapser(model.vertices[model.edges[i][j]], informationMatrix);
 
                         Vector3D scale = new Vector3D(20, 20 ,20);
                         current1 = dotPoint(current1, new Vector3D(15, 15, 15));
@@ -128,6 +146,17 @@ public class Listener implements org.bukkit.event.Listener {
 
     }
 
+    private Vector3D homogenousCollapser(Vector3D vertex, Matrix4D informationMatrix) {
+        //return new Vector3D(informationMatrix.xx * vertex.x + informationMatrix.yx * vertex.x + informationMatrix.yz * vertex.x + informationMatrix.lx * vertex.x);
+        return null;
+    }
+
+    private Matrix3D MatrixMultiplication(Matrix3D rotMat, Matrix3D scaleMat) {
+        return new Matrix3D(rotMat.xx * scaleMat.xx, rotMat.yx * scaleMat.yx, rotMat.zy * scaleMat.zy,
+                                rotMat.xy * scaleMat.xy, rotMat.yy * scaleMat.yy, rotMat.zy * scaleMat.zy,
+                                rotMat.xz * scaleMat.xz, rotMat.yz * scaleMat.yz, rotMat.zz * scaleMat.zz);
+    }
+
     private void DrawLine(World world, Location location1, Location location2, int steps){
         DrawLine(world, location1, location2, steps, Color.BLACK, 2);
     }
@@ -146,7 +175,9 @@ public class Listener implements org.bukkit.event.Listener {
         double differenceZ = (location1.getZ() - location2.getZ()) / (steps-1);
 
         for(int i = 0; i < steps; i++){
+
             Location loc = new Location(world, location1.getX() - (differenceX*i), location1.getY() - (differenceY * i), location1.getZ() - (differenceZ * i));
+
             world.spawnParticle(Particle.DUST, loc, 1, 0, 0, 0, new Particle.DustOptions(colour, size));
         }
     }
@@ -229,11 +260,11 @@ public class Listener implements org.bukkit.event.Listener {
                             connections.put(numbers.get(i), list);
                         }
                     }
-
                     break;
             }
-
         }
+
+
         int[][] connectionArray = new int[vertices.size()][];
         for(int i = 0; i < connectionArray.length; i++){
             if(!connections.containsKey(i)) {
@@ -244,7 +275,14 @@ public class Listener implements org.bukkit.event.Listener {
             ArrayList<Integer> values =  connections.get(i);
             connectionArray[i] = new int[values.size()];
             for(int j = 0; j < values.size(); j++){
+                if(connections.containsKey(values.get(j))){
+                    if(connections.get(values.get(j)).contains(i)){
+                        continue;
+                    }
+                }
                 connectionArray[i][j] = values.get(j);
+
+
             }
         }
         return new Model(pos, anc, vertices.toArray(new Vector3D[0]), connectionArray);
