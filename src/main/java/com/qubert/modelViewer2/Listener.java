@@ -15,8 +15,6 @@ import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.scheduler.BukkitRunnable;
-import org.joml.Matrix3d;
-import org.joml.Vector3d;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -50,8 +48,12 @@ public class Listener implements org.bukkit.event.Listener {
         if(playerLocations.contains(playerID)){
            return;
         }
+        /*Vector3D[] vertices = new Vector3D[]{ new Vector3D(0, 0, 0), new Vector3D(10, 0, 0), new Vector3D(0, 0, 10),
+                new Vector3D(10, 0, 10), new Vector3D(0, 10, 0), new Vector3D(10, 10, 0), new Vector3D(0, 10, 10), new Vector3D(10, 10, 10) };
+        int[][] edges = new int[][]{
+                { 1, 2, 4, 7 }, { 5, 3, 6 } , { 6, 3 }, { 7 }, {5, 6}, {7}, {7}};
 
-
+        model = new Model(new Vector3D(0, 100, 0), new Vector3D(-5, 0, -5), vertices, edges);*/
 
         playerLocations.add(player.getLocation());
         blockLookingAt.add(player.getTargetBlock(null, 100).getLocation());
@@ -120,6 +122,7 @@ public class Listener implements org.bukkit.event.Listener {
 
                 for(int i = 0; i < model.edges.length; i++){
                     for(int j = 0; j < model.edges[i].length; j++){
+
                         //Set the model anchor to the centre
                         Vector3D current1 = sumPoint(model.vertices[i], model.anchor);
                         Vector3D current2 = sumPoint(model.vertices[model.edges[i][j]], model.anchor);
@@ -260,11 +263,11 @@ public class Listener implements org.bukkit.event.Listener {
                             connections.put(numbers.get(i), list);
                         }
                     }
+
                     break;
             }
+
         }
-
-
         int[][] connectionArray = new int[vertices.size()][];
         for(int i = 0; i < connectionArray.length; i++){
             if(!connections.containsKey(i)) {
@@ -281,8 +284,6 @@ public class Listener implements org.bukkit.event.Listener {
                     }
                 }
                 connectionArray[i][j] = values.get(j);
-
-
             }
         }
         return new Model(pos, anc, vertices.toArray(new Vector3D[0]), connectionArray);
