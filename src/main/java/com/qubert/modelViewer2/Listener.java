@@ -92,6 +92,7 @@ public class Listener implements org.bukkit.event.Listener {
         zero = new Location(plugin.getServer().getWorlds().get(0), 0, 100, 0);
         theWorld = plugin.getServer().getWorlds().get(0);
         model = ObjReader("Cube.obj", new Vector3D(0, 100, 0), new Vector3D(0, 0, 0));
+        model.BakeLocations(5, theWorld);
         new BukkitRunnable() {
             @Override
             public void run() {
@@ -118,8 +119,6 @@ public class Listener implements org.bukkit.event.Listener {
 
                 Matrix4D informationMatrix = new Matrix4D(scaleRotMatrix, translationMatrix);
 
-
-
                 for(int i = 0; i < model.edges.length; i++){
                     for(int j = 0; j < model.edges[i].length; j++){
 
@@ -140,8 +139,7 @@ public class Listener implements org.bukkit.event.Listener {
                         current1 = sumPoint(current1, model.position);
                         current2 = sumPoint(current2, model.position);
 
-
-                        DrawLine(theWorld, PointToLocation(theWorld, current1), PointToLocation(theWorld, current2), 20);
+                        //DrawLine(theWorld, PointToLocation(theWorld, current1), PointToLocation(theWorld, current2), 20);
                     }
                 }
             }
@@ -158,6 +156,11 @@ public class Listener implements org.bukkit.event.Listener {
         return new Matrix3D(rotMat.xx * scaleMat.xx, rotMat.yx * scaleMat.yx, rotMat.zy * scaleMat.zy,
                                 rotMat.xy * scaleMat.xy, rotMat.yy * scaleMat.yy, rotMat.zy * scaleMat.zy,
                                 rotMat.xz * scaleMat.xz, rotMat.yz * scaleMat.yz, rotMat.zz * scaleMat.zz);
+    }
+
+    private void DrawPoint(World theWorld, Location location){
+
+        theWorld.spawnParticle(Particle.DUST, location, 1, 0, 0, 0, new Particle.DustOptions(Color.BLACK, 4));
     }
 
     private void DrawLine(World world, Location location1, Location location2, int steps){
