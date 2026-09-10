@@ -3,6 +3,7 @@ package com.qubert.modelViewer2;
 import com.qubert.modelViewer2.Data.Matrix3D;
 import com.qubert.modelViewer2.Data.Matrix4D;
 import com.qubert.modelViewer2.Data.Vector3D;
+import com.qubert.modelViewer2.Data.Vector4D;
 import io.papermc.paper.event.block.BlockBreakBlockEvent;
 import org.bukkit.Color;
 import org.bukkit.Location;
@@ -10,7 +11,6 @@ import org.bukkit.Particle;
 import org.bukkit.World;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
-import org.bukkit.event.block.BlockPlaceEvent;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.plugin.Plugin;
@@ -88,6 +88,16 @@ public class Listener implements org.bukkit.event.Listener {
                                 vec1.x * mat1.xz + vec1.y * mat1.yz + vec1.z * mat1.zz);
     }
 
+    private Vector4D MatrixVectorMultiplication(Matrix4D matrix4D, Vector4D vector4D){
+        return new Vector4D(
+                matrix4D.xx * vector4D.x + matrix4D.yx * vector4D.y + matrix4D.zx * vector4D.z + matrix4D.lx * vector4D.l,
+                matrix4D.xy * vector4D.x + matrix4D.yy * vector4D.y + matrix4D.zy * vector4D.z + matrix4D.ly * vector4D.l,
+                matrix4D.xz * vector4D.x + matrix4D.yz * vector4D.y + matrix4D.zz * vector4D.z + matrix4D.lz * vector4D.l,
+                matrix4D.xl * vector4D.x + matrix4D.yl * vector4D.y + matrix4D.zl * vector4D.z + matrix4D.ll * vector4D.l
+                );
+
+    }
+
     public Listener(Plugin plugin) throws FileNotFoundException {
         zero = new Location(plugin.getServer().getWorlds().get(0), 0, 100, 0);
         theWorld = plugin.getServer().getWorlds().get(0);
@@ -122,24 +132,13 @@ public class Listener implements org.bukkit.event.Listener {
                 for(int i = 0; i < model.edges.length; i++){
                     for(int j = 0; j < model.edges[i].length; j++){
 
-                        //Set the model anchor to the centre
-                        Vector3D current1 = sumPoint(model.vertices[i], model.anchor);
-                        Vector3D current2 = sumPoint(model.vertices[model.edges[i][j]], model.anchor);
+                        Vector4D current14D = new Vector4D(model.vertices[i], 0);
+                        Vector4D current24D = new Vector4D(model.vertices[model.edges[i][j]], 0);
 
-                        Vector3D current11 = homogenousCollapser(model.vertices[i], informationMatrix);
-                        Vector3D current22 = homogenousCollapser(model.vertices[model.edges[i][j]], informationMatrix);
+                        Vector3D current1 = MatrixVectorMultiplication(informationMatrix, current14D).toVector3D();
+                        Vector3D current2 = MatrixVectorMultiplication(informationMatrix, current24D).toVector3D();
 
-                        Vector3D scale = new Vector3D(20, 20 ,20);
-                        current1 = dotPoint(current1, new Vector3D(15, 15, 15));
-                        current2 = dotPoint(current2, new Vector3D(15, 15, 15));
-                        //apply the rotational matrix to the model
-                        current1 = vectorMatrixAddition(current1, rotMat);
-                        current2 = vectorMatrixAddition(current2, rotMat);
-                        //Transform the model to the proper location
-                        current1 = sumPoint(current1, model.position);
-                        current2 = sumPoint(current2, model.position);
-
-                        //DrawLine(theWorld, PointToLocation(theWorld, current1), PointToLocation(theWorld, current2), 20);
+                        DrawLine(theWorld, PointToLocation(theWorld, current1), PointToLocation(theWorld, current2), 20);
                     }
                 }
             }
