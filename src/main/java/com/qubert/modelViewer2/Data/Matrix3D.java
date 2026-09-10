@@ -16,4 +16,10 @@ public class Matrix3D {
         this.zy = zy;
         this.zz = zz;
     }
+
+    public Matrix3D MatrixMultiplication(Matrix3D otherMatrix) {
+        return new Matrix3D(otherMatrix.xx * xx, otherMatrix.yx * yx, otherMatrix.zy * zy,
+                otherMatrix.xy * xy, otherMatrix.yy * yy, otherMatrix.zy * zy,
+                otherMatrix.xz * xz, otherMatrix.yz * yz, otherMatrix.zz * zz);
+    }
 }

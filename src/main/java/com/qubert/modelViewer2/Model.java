@@ -16,7 +16,7 @@ public class Model {
     Vector3D[] vertices;
     int[][] edges;
 
-    private ArrayList<Location> bakedLocations;
+    public ArrayList<Location> bakedLocations;
 
     public Model(Vector3D position, Vector3D anchor, Vector3D[] vertices, int[][] edges){
         this.position = position;
@@ -44,7 +44,6 @@ public class Model {
                 for(int k = 0; k < steps; k++){
                     bakedLocations.add(new Location(world, x.x - (xDiff*i), x.y - (yDiff*i), x.z - (zDiff*i)));
                 }
-
             }
         }
     }
